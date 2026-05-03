@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Grace">
+<meta name="theme-color" id="themeColor" content="#f5f6fa">
+<link rel="manifest" href="manifest.json">
+<title>Grace</title>
+<style>
+:root {
+  --bg:#e8eaf0; --phone:#f5f6fa; --text:#1a1a2e; --sub:#667;
+  --card:#fff; --border:#dde; --accent:#2a7ab8; --accent2:#1a5a90;
+  --fs:1;
+}
+.dark {
+  --bg:#111827; --phone:#1f2937; --text:#f0f4ff; --sub:#9aa;
+  --card:#2a3344; --border:#3a4560; --accent:#60a5fa; --accent2:#3b82f6;
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); display:flex; justify-content:center; align-items:center; min-height:100vh; padding:20px; transition:background .3s; }
+.phone { background:var(--phone); border-radius:40px; width:340px; min-height:680px; padding:20px 16px 24px; box-shadow:0 0 0 8px #d0d3de,0 0 0 10px #bbb,0 20px 60px rgba(0,0,0,.25); position:relative; overflow:hidden; transition:background .3s; }
+.dark .phone { box-shadow:0 0 0 8px #374151,0 0 0 10px #1f2937,0 20px 60px rgba(0,0,0,.6); }
+
+.status-bar { display:flex; justify-content:space-between; align-items:center; padding:6px 10px 14px; color:var(--text); font-size:calc(13px * var(--fs)); font-weight:600; }
+.greeting { text-align:center; padding:10px 0 14px; }
+.greeting .hora { font-size:calc(52px * var(--fs)); font-weight:300; letter-spacing:2px; line-height:1; color:var(--text); }
+.greeting .fecha { font-size:calc(16px * var(--fs)); color:var(--sub); margin-top:4px; }
+.greeting .saludo { font-size:calc(21px * var(--fs)); color:var(--accent); margin-top:10px; font-weight:600; }
+
+.mic-area { display:flex; flex-direction:column; align-items:center; margin:6px 0 12px; gap:6px; }
+.mic-btn { width:64px; height:64px; border-radius:50%; border:3px solid var(--accent); background:var(--card); font-size:28px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(42,122,184,.2); transition:transform .15s,background .15s; user-select:none; }
+.mic-btn.listening { background:var(--accent); animation:pulse 1.2s infinite; }
+@keyframes pulse { 0%,100%{box-shadow:0 0 0 8px rgba(42,122,184,.2),0 0 0 16px rgba(42,122,184,.08)} 50%{box-shadow:0 0 0 12px rgba(42,122,184,.3),0 0 0 22px rgba(42,122,184,.1)} }
+.mic-label { font-size:calc(13px * var(--fs)); color:var(--sub); font-weight:600; text-align:center; }
+.mic-result { font-size:calc(14px * var(--fs)); color:var(--accent); font-weight:700; min-height:20px; text-align:center; }
+
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:4px; }
+.btn { background:var(--card); border:2px solid var(--border); border-radius:24px; padding:20px 10px; display:flex; flex-direction:column; align-items:center; gap:10px; cursor:pointer; transition:transform .15s,background .15s,box-shadow .2s; user-select:none; box-shadow:0 2px 8px rgba(0,0,0,.07); position:relative; }
+.btn:active,.btn.pressed { transform:scale(.95); }
+.btn.highlight { transform:scale(1.05); box-shadow:0 0 0 4px var(--accent),0 4px 20px rgba(42,122,184,.3); }
+.btn .icon { font-size:44px; line-height:1; }
+.btn .label { font-size:calc(17px * var(--fs)); font-weight:700; text-align:center; line-height:1.2; color:var(--text); }
+.btn .edit-dot { position:absolute; top:8px; right:8px; font-size:12px; background:var(--bg); border-radius:8px; padding:2px 6px; color:var(--accent); font-weight:700; display:none; cursor:pointer; border:1px solid var(--border); }
+.global-edit-mode .btn .edit-dot { display:block; }
+.btn.whatsapp { border-color:#25D366; } .btn.whatsapp .label { color:#1a9e4e; }
+.btn.banco  { border-color:#4a9eff; } .btn.banco  .label { color:#1a6ec0; }
+.btn.llamar { border-color:#ff6b6b; } .btn.llamar .label { color:#cc2222; }
+.btn.camara { border-color:#f0b429; } .btn.camara .label { color:#a07800; }
+.btn.fotos  { border-color:#c77dff; } .btn.fotos  .label { color:#7b2fbe; }
+.btn.settings-btn { border-color:#bbb; }
+
+.sos-btn { margin-top:14px; background:#c0392b; border:none; border-radius:20px; padding:18px; width:100%; display:flex; align-items:center; justify-content:center; gap:12px; cursor:pointer; transition:transform .15s,box-shadow .2s; user-select:none; position:relative; }
+.sos-btn:active,.sos-btn.pressed { transform:scale(.97); background:#e74c3c; }
+.sos-btn.highlight { box-shadow:0 0 0 5px #ff6b6b,0 4px 20px rgba(192,57,43,.4); }
+.sos-btn .s-icon { font-size:30px; }
+.sos-btn .s-label { font-size:calc(18px * var(--fs)); font-weight:800; color:#fff; flex:1; text-align:center; }
+.sos-edit-dot { position:absolute; top:8px; right:10px; font-size:12px; background:rgba(255,255,255,.25); border-radius:8px; padding:2px 6px; color:#fff; font-weight:700; display:none; cursor:pointer; }
+.global-edit-mode .sos-edit-dot { display:block; }
+
+.bottom-bar { display:flex; justify-content:center; margin-top:12px; }
+.customize-btn { background:none; border:none; font-size:calc(12px * var(--fs)); color:var(--sub); cursor:pointer; font-weight:600; padding:4px 10px; border-radius:10px; }
+.customize-btn:active { background:var(--border); }
+
+/* OVERLAYS */
+.overlay { display:none; position:absolute; inset:0; background:rgba(0,0,0,.5); border-radius:40px; z-index:50; justify-content:center; align-items:flex-end; padding-bottom:16px; }
+.overlay.open { display:flex; }
+.sheet { background:var(--phone); border-radius:28px; width:100%; padding:20px 16px 12px; box-shadow:0 -4px 30px rgba(0,0,0,.15); max-height:570px; overflow-y:auto; }
+.sheet-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.sheet-title { font-size:calc(18px * var(--fs)); font-weight:800; color:var(--text); }
+.edit-toggle { background:var(--bg); border:none; border-radius:12px; padding:6px 12px; font-size:13px; font-weight:700; color:var(--accent); cursor:pointer; }
+
+/* contacts */
+.contact-row { display:flex; align-items:center; gap:12px; background:var(--card); border:2px solid var(--border); border-radius:18px; padding:12px 14px; width:100%; margin-bottom:10px; cursor:pointer; transition:transform .12s; box-shadow:0 2px 6px rgba(0,0,0,.06); }
+.contact-row:active { transform:scale(.97); }
+.c-avatar { font-size:28px; width:44px; height:44px; border-radius:50%; background:var(--bg); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.c-info { flex:1; text-align:left; }
+.c-name { font-size:calc(17px * var(--fs)); font-weight:700; color:var(--text); }
+.c-number { font-size:calc(13px * var(--fs)); color:var(--sub); margin-top:2px; }
+.c-edit { background:var(--bg); border:none; border-radius:10px; padding:6px 10px; font-size:15px; cursor:pointer; display:none; }
+.editing-contacts .c-edit { display:block; }
+.editing-contacts .contact-row { cursor:default; }
+.editing-contacts .contact-row:active { transform:none; }
+.sheet-close { display:block; width:100%; padding:12px; background:none; border:2px solid var(--border); border-radius:14px; font-size:calc(16px * var(--fs)); font-weight:700; color:var(--sub); cursor:pointer; margin-top:4px; }
+
+/* bank picker */
+.bank-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+.bank-opt { background:var(--card); border:2px solid var(--border); border-radius:16px; padding:14px 8px; display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; transition:transform .12s,border-color .12s; box-shadow:0 2px 6px rgba(0,0,0,.06); }
+.bank-opt:active { transform:scale(.96); }
+.bank-opt.selected { border-color:var(--accent); background:#e6f0fb; }
+.dark .bank-opt.selected { background:#1e3a5f; }
+.bank-opt .b-icon { font-size:28px; }
+.bank-opt .b-name { font-size:calc(13px * var(--fs)); font-weight:700; color:var(--text); text-align:center; line-height:1.2; }
+
+/* edit sheet */
+.edit-sheet { background:var(--phone); border-radius:28px; width:100%; padding:20px 16px 16px; box-shadow:0 -4px 30px rgba(0,0,0,.15); }
+.edit-title { font-size:calc(17px * var(--fs)); font-weight:800; color:var(--text); text-align:center; margin-bottom:14px; }
+.emoji-picker { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:14px; }
+.emoji-opt { font-size:26px; width:44px; height:44px; border-radius:12px; border:2px solid var(--border); background:var(--card); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:transform .1s; }
+.emoji-opt.selected { border-color:var(--accent); background:#e6f0fb; transform:scale(1.1); }
+.edit-field { margin-bottom:12px; }
+.edit-field label { font-size:calc(13px * var(--fs)); font-weight:700; color:var(--sub); display:block; margin-bottom:4px; }
+.edit-field input { width:100%; padding:12px 14px; border:2px solid var(--border); border-radius:14px; font-size:calc(16px * var(--fs)); font-family:inherit; background:var(--card); color:var(--text); outline:none; transition:border-color .2s; }
+.edit-field input:focus { border-color:var(--accent); }
+.edit-actions { display:flex; gap:10px; margin-top:6px; }
+.btn-save { flex:1; padding:13px; background:var(--accent); border:none; border-radius:14px; font-size:calc(16px * var(--fs)); font-weight:800; color:#fff; cursor:pointer; }
+.btn-save:active { background:var(--accent2); }
+.btn-cancel-edit { padding:13px 18px; background:var(--bg); border:none; border-radius:14px; font-size:calc(16px * var(--fs)); font-weight:700; color:var(--sub); cursor:pointer; }
+
+/* SETTINGS PANEL */
+.settings-section { margin-bottom:18px; }
+.settings-section h3 { font-size:calc(13px * var(--fs)); font-weight:700; color:var(--sub); text-transform:uppercase; letter-spacing:.5px; margin-bottom:10px; }
+.setting-row { display:flex; justify-content:space-between; align-items:center; background:var(--card); border:2px solid var(--border); border-radius:16px; padding:14px 16px; margin-bottom:8px; }
+.setting-label { font-size:calc(15px * var(--fs)); font-weight:600; color:var(--text); }
+.setting-sub { font-size:calc(12px * var(--fs)); color:var(--sub); margin-top:2px; }
+.toggle-switch { width:52px; height:30px; border-radius:15px; background:var(--border); position:relative; cursor:pointer; transition:background .3s; flex-shrink:0; border:none; }
+.toggle-switch.on { background:var(--accent); }
+.toggle-switch::after { content:''; position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%; background:#fff; transition:transform .3s; box-shadow:0 1px 4px rgba(0,0,0,.2); }
+.toggle-switch.on::after { transform:translateX(22px); }
+.fs-controls { display:flex; align-items:center; gap:10px; }
+.fs-btn { width:36px; height:36px; border-radius:10px; border:2px solid var(--border); background:var(--card); font-size:18px; font-weight:700; color:var(--accent); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.fs-btn:active { background:var(--bg); }
+.fs-val { font-size:calc(15px * var(--fs)); font-weight:700; color:var(--text); min-width:30px; text-align:center; }
+.vol-slider { width:120px; accent-color:var(--accent); cursor:pointer; }
+
+.toast { position:fixed; bottom:40px; left:50%; transform:translateX(-50%) translateY(20px); background:rgba(30,30,60,.88); color:#fff; padding:14px 24px; border-radius:30px; font-size:16px; font-weight:600; opacity:0; transition:opacity .3s,transform .3s; pointer-events:none; white-space:nowrap; z-index:100; }
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="phone" id="phone">
+  <div class="status-bar">
+    <span id="clock-time">--:--</span>
+    <span>📶 🔋</span>
+  </div>
+  <div class="greeting">
+    <div class="hora" id="big-clock">--:--</div>
+    <div class="fecha" id="fecha"></div>
+    <div class="saludo" id="saludo-text">¡Hola, Grace! 💙</div>
+  </div>
+  <div class="mic-area">
+    <button class="mic-btn" id="micBtn" onclick="toggleMic()">🎤</button>
+    <div class="mic-label" id="micLabel">Tocá el micrófono y hablá</div>
+    <div class="mic-result" id="micResult"></div>
+  </div>
+  <div class="grid">
+    <div class="btn whatsapp" id="btn-whatsapp" onclick="tap(this,'Abriendo WhatsApp...')">
+      <div class="icon">💬</div><div class="label">WhatsApp</div>
+    </div>
+    <div class="btn llamar" id="btn-llamar" onclick="openContacts()">
+      <div class="icon">📞</div><div class="label">Llamar</div>
+    </div>
+    <div class="btn banco" id="btn-banco" onclick="openBank()">
+      <div class="icon" id="banco-icon">🏦</div>
+      <div class="label" id="banco-label">Mi Banco</div>
+      <div class="edit-dot" onclick="openBankEdit(event)">✏️</div>
+    </div>
+    <div class="btn camara" id="btn-camara" onclick="tap(this,'Abriendo cámara...')">
+      <div class="icon">📷</div><div class="label">Cámara</div>
+    </div>
+    <div class="btn fotos" id="btn-fotos" onclick="tap(this,'Abriendo fotos...')">
+      <div class="icon">🖼️</div><div class="label">Mis Fotos</div>
+    </div>
+    <div class="btn settings-btn" id="btn-ajustes" onclick="openSettings()">
+      <div class="icon">⚙️</div><div class="label" style="color:var(--sub)">Ajustes</div>
+    </div>
+  </div>
+  <div class="sos-btn" id="btn-sos" onclick="tapSOS()">
+    <span class="s-icon">🆘</span>
+    <span class="s-label" id="sos-label">LLAMAR A MI HIJO/A</span>
+    <span class="sos-edit-dot" onclick="openSosEdit(event)">✏️</span>
+  </div>
+  <div class="bottom-bar">
+    <button class="customize-btn" id="globalEditBtn" onclick="toggleGlobalEdit()">⚙️ Personalizar</button>
+  </div>
+
+  <!-- CONTACTS -->
+  <div class="overlay" id="contactsOverlay">
+    <div class="sheet">
+      <div class="sheet-header">
+        <div class="sheet-title">📞 ¿A quién llamás?</div>
+        <button class="edit-toggle" id="contactEditToggle" onclick="toggleContactEdit()">✏️ Editar</button>
+      </div>
+      <div id="contactsList"></div>
+      <button class="sheet-close" onclick="closeContacts()">✕ Cancelar</button>
+    </div>
+  </div>
+
+  <!-- EDIT CONTACT -->
+  <div class="overlay" id="editContactOverlay">
+    <div class="edit-sheet">
+      <div class="edit-title">✏️ Editar contacto</div>
+      <div class="emoji-picker" id="emojiPicker"></div>
+      <div class="edit-field"><label>Nombre</label><input type="text" id="editName" placeholder="Ej: Martín, Médico..."></div>
+      <div class="edit-field"><label>Número de teléfono</label><input type="tel" id="editNumber" placeholder="+54 9 223 ..."></div>
+      <div class="edit-actions">
+        <button class="btn-cancel-edit" onclick="closeEditContact()">Cancelar</button>
+        <button class="btn-save" onclick="saveContact()">✔ Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BANK PICKER -->
+  <div class="overlay" id="bankOverlay">
+    <div class="edit-sheet">
+      <div class="edit-title">🏦 Elegir banco</div>
+      <div class="bank-grid" id="bankGrid"></div>
+      <div class="edit-actions">
+        <button class="btn-cancel-edit" onclick="closeBankOverlay()">Cancelar</button>
+        <button class="btn-save" onclick="saveBank()">✔ Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SOS EDIT -->
+  <div class="overlay" id="sosOverlay">
+    <div class="edit-sheet">
+      <div class="edit-title">🆘 Botón de emergencia</div>
+      <div class="edit-field"><label>¿A quién llama? (nombre)</label><input type="text" id="sosName" placeholder="Ej: Martín"></div>
+      <div class="edit-field"><label>Número de teléfono</label><input type="tel" id="sosNumber" placeholder="+54 9 223 ..."></div>
+      <div class="edit-actions">
+        <button class="btn-cancel-edit" onclick="closeSosEdit()">Cancelar</button>
+        <button class="btn-save" onclick="saveSos()">✔ Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="overlay" id="settingsOverlay">
+    <div class="sheet">
+      <div class="sheet-header">
+        <div class="sheet-title">⚙️ Ajustes</div>
+        <button class="edit-toggle" onclick="closeSettings()">✕ Cerrar</button>
+      </div>
+
+      <div class="settings-section">
+        <h3>Apariencia</h3>
+        <div class="setting-row">
+          <div><div class="setting-label">🌙 Modo oscuro</div><div class="setting-sub">Fondo oscuro para la pantalla</div></div>
+          <button class="toggle-switch" id="darkToggle" onclick="toggleDark()"></button>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-label">🔡 Tamaño de letra</div><div class="setting-sub">Hacé el texto más grande o chico</div></div>
+          <div class="fs-controls">
+            <button class="fs-btn" onclick="changeFs(-0.1)">−</button>
+            <span class="fs-val" id="fsVal">100%</span>
+            <button class="fs-btn" onclick="changeFs(0.1)">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Voz</h3>
+        <div class="setting-row">
+          <div><div class="setting-label">🔊 Volumen de voz</div><div class="setting-sub">Qué tan fuerte habla la app</div></div>
+          <input class="vol-slider" type="range" min="0" max="1" step="0.1" id="volSlider" oninput="changeVol(this.value)">
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-label">🎙️ Respuesta de voz</div><div class="setting-sub">La app responde hablando</div></div>
+          <button class="toggle-switch on" id="voiceToggle" onclick="toggleVoice()"></button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Saludo</h3>
+        <div class="edit-field" style="margin-bottom:0">
+          <label>Nombre en el saludo</label>
+          <input type="text" id="settingsName" placeholder="Grace" oninput="previewName(this.value)">
+        </div>
+        <button class="btn-save" style="margin-top:10px;width:100%" onclick="saveName()">✔ Guardar nombre</button>
+      </div>
+
+      <div class="settings-section">
+        <h3>Instalar en el teléfono</h3>
+        <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+          <div class="setting-label">📲 Cómo instalar en Samsung</div>
+          <div class="setting-sub" style="line-height:1.6">
+            1. Abrí esta página en <b>Chrome</b><br>
+            2. Tocá el menú <b>⋮</b> arriba a la derecha<br>
+            3. Elegí <b>"Agregar a pantalla de inicio"</b><br>
+            4. Confirmá — aparece el ícono como una app
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'graceAppData';
+const EMOJIS = ['📱','👨‍⚕️','👩','👨','🏠','💊','❤️','⭐','🩺','👴','👵','🧒','🐾','🚗','📞'];
+
+const BANKS = [
+  { icon:'🟠', name:'Galicia',     deep:'galicia://',           fallback:'https://www.galicia.ar' },
+  { icon:'💙', name:'Cuenta DNI',  deep:'cuentadni://',         fallback:'https://cuentadni.com.ar' },
+];
+
+const defaultData = {
+  contacts:[
+    {emoji:'📱',name:'Hijo/a',        number:'+54 9 223 000-0001'},
+    {emoji:'👨‍⚕️',name:'Médico',        number:'+54 9 223 000-0002'},
+    {emoji:'👩', name:'Hermana',       number:'+54 9 223 000-0003'},
+    {emoji:'🏠', name:'Vecina Carmen', number:'+54 9 223 000-0004'},
+    {emoji:'💊', name:'Farmacia',      number:'+54 9 223 000-0005'},
+  ],
+  sos:{name:'mi hijo/a',number:''},
+  bank:{index:0},
+  settings:{dark:false,fs:1,vol:1,voice:true,name:'Grace'},
+};
+
+let data = JSON.parse(localStorage.getItem(STORAGE_KEY)||'null') || JSON.parse(JSON.stringify(defaultData));
+let editingContactIdx=null, selectedEmoji='📱', contactEditMode=false, globalEdit=false, selectedBankIdx=null;
+
+function save(){ localStorage.setItem(STORAGE_KEY,JSON.stringify(data)); }
+
+// --- Apply settings ---
+function applySettings(){
+  const s = data.settings;
+  document.body.classList.toggle('dark', s.dark);
+  document.getElementById('darkToggle').classList.toggle('on', s.dark);
+  document.documentElement.style.setProperty('--fs', s.fs);
+  document.getElementById('fsVal').textContent = Math.round(s.fs*100)+'%';
+  document.getElementById('volSlider').value = s.vol;
+  document.getElementById('voiceToggle').classList.toggle('on', s.voice);
+  document.getElementById('settingsName').value = s.name;
+  document.getElementById('saludo-text').textContent = '¡Hola, '+s.name+'! 💙';
+  document.getElementById('themeColor').content = s.dark ? '#1f2937' : '#f5f6fa';
+  // sos label
+  document.getElementById('sos-label').textContent = 'LLAMAR A '+(data.sos.name||'MI HIJO/A').toUpperCase();
+  // bank
+  updateBankUI();
+}
+applySettings();
+
+function toggleDark(){ data.settings.dark=!data.settings.dark; save(); applySettings(); }
+function changeFs(d){ data.settings.fs=Math.min(1.4,Math.max(0.8,+(data.settings.fs+d).toFixed(1))); save(); applySettings(); }
+function changeVol(v){ data.settings.vol=parseFloat(v); save(); }
+function toggleVoice(){ data.settings.voice=!data.settings.voice; save(); applySettings(); }
+function previewName(v){ document.getElementById('saludo-text').textContent='¡Hola, '+(v||'Grace')+'! 💙'; }
+function saveName(){
+  const v=document.getElementById('settingsName').value.trim();
+  if(!v) return;
+  data.settings.name=v; save(); applySettings(); showToast('✅ Nombre guardado');
+}
+function openSettings(){ document.getElementById('settingsOverlay').classList.add('open'); }
+function closeSettings(){ document.getElementById('settingsOverlay').classList.remove('open'); }
+
+// --- Clock ---
+function pad(n){return n<10?'0'+n:n;}
+function updateClock(){
+  const now=new Date();
+  const h=pad(now.getHours()),m=pad(now.getMinutes());
+  document.getElementById('big-clock').textContent=h+':'+m;
+  document.getElementById('clock-time').textContent=h+':'+m;
+  const dias=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const meses=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  document.getElementById('fecha').textContent=dias[now.getDay()]+', '+now.getDate()+' de '+meses[now.getMonth()];
+}
+updateClock(); setInterval(updateClock,10000);
+
+// --- Toast & voice ---
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+function speak(text){
+  if(!window.speechSynthesis||!data.settings.voice) return;
+  window.speechSynthesis.cancel();
+  const utt=new SpeechSynthesisUtterance(text);
+  utt.lang='es-AR'; utt.rate=0.9; utt.pitch=1.05; utt.volume=data.settings.vol;
+  const voices=window.speechSynthesis.getVoices();
+  const v=voices.find(v=>v.lang.startsWith('es')&&v.name.toLowerCase().includes('female'))||voices.find(v=>v.lang.startsWith('es'));
+  if(v) utt.voice=v;
+  window.speechSynthesis.speak(utt);
+}
+if(window.speechSynthesis){window.speechSynthesis.getVoices();window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices();}
+
+// --- Global edit mode ---
+function toggleGlobalEdit(){
+  globalEdit=!globalEdit;
+  document.getElementById('phone').classList.toggle('global-edit-mode',globalEdit);
+  document.getElementById('globalEditBtn').textContent=globalEdit?'✔ Listo':'⚙️ Personalizar';
+}
+
+// --- Buttons ---
+function tap(el,msg){
+  if(globalEdit) return;
+  el.classList.add('pressed'); setTimeout(()=>el.classList.remove('pressed'),200);
+  showToast(msg); speak(msg);
+}
+function tapSOS(){
+  if(globalEdit) return;
+  const el=document.getElementById('btn-sos');
+  el.classList.add('pressed'); setTimeout(()=>el.classList.remove('pressed'),200);
+  const name=data.sos.name||'tu hijo/a';
+  if(data.sos.number) window.location.href='tel:'+data.sos.number.replace(/\s/g,'');
+  showToast('📞 Llamando a '+name+'...');
+  speak('Llamando a '+name+'. Un momento, '+data.settings.name+'.');
+}
+function activateBtn(cmd){
+  const el=document.getElementById(cmd.id);
+  if(!el) return;
+  el.classList.add('highlight'); showToast(cmd.msg); speak(cmd.msg);
+  setTimeout(()=>el.classList.remove('highlight'),1500);
+}
+
+// --- Bank ---
+function updateBankUI(){
+  const b=BANKS[data.bank.index]||BANKS[0];
+  document.getElementById('banco-icon').textContent=b.icon;
+  document.getElementById('banco-label').textContent=b.name;
+}
+function openBank(){
+  if(globalEdit){openBankEdit(null);return;}
+  const b=BANKS[data.bank.index]||BANKS[0];
+  const msg='Abriendo '+b.name+'...';
+  showToast(msg); speak(msg);
+  // Try deep link, fallback to web
+  try{ window.location.href=b.deep; }catch(e){}
+  setTimeout(()=>{ window.open(b.fallback,'_blank'); },1200);
+}
+function openBankEdit(e){
+  if(e) e.stopPropagation();
+  selectedBankIdx=data.bank.index;
+  renderBankGrid();
+  document.getElementById('bankOverlay').classList.add('open');
+}
+function renderBankGrid(){
+  const grid=document.getElementById('bankGrid');
+  grid.innerHTML='';
+  BANKS.forEach((b,i)=>{
+    const div=document.createElement('div');
+    div.className='bank-opt'+(selectedBankIdx===i?' selected':'');
+    div.innerHTML=`<div class="b-icon">${b.icon}</div><div class="b-name">${b.name}</div>`;
+    div.onclick=()=>{selectedBankIdx=i;renderBankGrid();};
+    grid.appendChild(div);
+  });
+}
+function closeBankOverlay(){ document.getElementById('bankOverlay').classList.remove('open'); }
+function saveBank(){
+  if(selectedBankIdx===null){closeBankOverlay();return;}
+  data.bank.index=selectedBankIdx; save(); updateBankUI(); closeBankOverlay();
+  showToast('✅ Banco guardado');
+}
+
+// --- SOS edit ---
+function openSosEdit(e){
+  if(e) e.stopPropagation();
+  document.getElementById('sosName').value=data.sos.name||'';
+  document.getElementById('sosNumber').value=data.sos.number||'';
+  document.getElementById('sosOverlay').classList.add('open');
+}
+function closeSosEdit(){ document.getElementById('sosOverlay').classList.remove('open'); }
+function saveSos(){
+  const name=document.getElementById('sosName').value.trim();
+  const number=document.getElementById('sosNumber').value.trim();
+  if(!name){document.getElementById('sosName').focus();return;}
+  data.sos={name,number}; save(); applySettings(); closeSosEdit();
+  showToast('✅ Botón SOS guardado');
+}
+
+// --- Contacts ---
+function renderContacts(){
+  const list=document.getElementById('contactsList');
+  list.innerHTML='';
+  list.className=contactEditMode?'editing-contacts':'';
+  data.contacts.forEach((c,i)=>{
+    const div=document.createElement('div');
+    div.className='contact-row';
+    div.innerHTML=`<div class="c-avatar">${c.emoji}</div><div class="c-info"><div class="c-name">${c.name}</div><div class="c-number">${c.number}</div></div><button class="c-edit" onclick="openEditContact(${i},event)">✏️</button>`;
+    if(!contactEditMode) div.onclick=()=>callContact(c.name,c.number);
+    list.appendChild(div);
+  });
+}
+function openContacts(){
+  if(globalEdit) return;
+  contactEditMode=false;
+  renderContacts();
+  document.getElementById('contactEditToggle').textContent='✏️ Editar';
+  document.getElementById('contactsOverlay').classList.add('open');
+  speak('¿A quién querés llamar, '+data.settings.name+'?');
+}
+function closeContacts(){ contactEditMode=false; document.getElementById('contactsOverlay').classList.remove('open'); }
+function toggleContactEdit(){
+  contactEditMode=!contactEditMode;
+  document.getElementById('contactEditToggle').textContent=contactEditMode?'✔ Listo':'✏️ Editar';
+  renderContacts();
+}
+function callContact(name,number){
+  closeContacts();
+  if(number) window.location.href='tel:'+number.replace(/\s/g,'');
+  showToast('📞 Llamando a '+name+'...'); speak('Llamando a '+name+'. Un momento, '+data.settings.name+'.');
+}
+function openEditContact(i,e){
+  if(e) e.stopPropagation();
+  editingContactIdx=i;
+  const c=data.contacts[i];
+  selectedEmoji=c.emoji;
+  document.getElementById('editName').value=c.name;
+  document.getElementById('editNumber').value=c.number;
+  renderEmojiPicker();
+  document.getElementById('editContactOverlay').classList.add('open');
+}
+function closeEditContact(){ document.getElementById('editContactOverlay').classList.remove('open'); editingContactIdx=null; }
+function renderEmojiPicker(){
+  const picker=document.getElementById('emojiPicker');
+  picker.innerHTML='';
+  EMOJIS.forEach(em=>{
+    const btn=document.createElement('button');
+    btn.className='emoji-opt'+(em===selectedEmoji?' selected':'');
+    btn.textContent=em;
+    btn.onclick=()=>{selectedEmoji=em;renderEmojiPicker();};
+    picker.appendChild(btn);
+  });
+}
+function saveContact(){
+  const name=document.getElementById('editName').value.trim();
+  const number=document.getElementById('editNumber').value.trim();
+  if(!name){document.getElementById('editName').focus();return;}
+  data.contacts[editingContactIdx]={emoji:selectedEmoji,name,number};
+  save(); closeEditContact(); renderContacts(); showToast('✅ Contacto guardado');
+}
+
+// --- Speech recognition ---
+const voiceCmds=[
+  {words:['whatsapp','watsap','mensaje','chat'],id:'btn-whatsapp',msg:'Abriendo WhatsApp...'},
+  {words:['llamar','teléfono','telefono','llamada'],id:'btn-llamar',msg:''},
+  {words:['banco','galicia','cuenta','dni','plata'],id:'btn-banco',msg:''},
+  {words:['cámara','camara','sacar','foto'],id:'btn-camara',msg:'Abriendo cámara...'},
+  {words:['fotos','galería','galeria','imágenes'],id:'btn-fotos',msg:'Abriendo fotos...'},
+  {words:['ajustes','configuración','opciones','settings'],id:'btn-ajustes',msg:''},
+  {words:['ayuda','socorro','emergencia','sos'],id:'btn-sos',msg:''},
+];
+function matchCmd(t){
+  const n=t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  for(const c of voiceCmds) for(const w of c.words) if(n.includes(w.normalize('NFD').replace(/[\u0300-\u036f]/g,''))) return c;
+  return null;
+}
+let recognition=null,listening=false;
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+if(!SR){
+  document.getElementById('micLabel').textContent='⚠️ Tu navegador no soporta voz';
+  document.getElementById('micBtn').style.opacity='0.4';
+} else {
+  recognition=new SR();
+  recognition.lang='es-AR'; recognition.continuous=false; recognition.interimResults=true;
+  recognition.onstart=()=>{
+    listening=true;
+    document.getElementById('micBtn').classList.add('listening');
+    document.getElementById('micBtn').textContent='🔴';
+    document.getElementById('micLabel').textContent='Escuchando... hablá ahora';
+    document.getElementById('micResult').textContent='';
+  };
+  recognition.onresult=(e)=>{
+    let interim='',final='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const t=e.results[i][0].transcript;
+      if(e.results[i].isFinal) final+=t; else interim+=t;
+    }
+    document.getElementById('micResult').textContent=(final||interim)?'"'+(final||interim)+'"':'';
+    if(final){
+      const cmd=matchCmd(final);
+      if(cmd){
+        if(cmd.id==='btn-llamar') openContacts();
+        else if(cmd.id==='btn-banco') openBank();
+        else if(cmd.id==='btn-sos') tapSOS();
+        else if(cmd.id==='btn-ajustes') openSettings();
+        else activateBtn(cmd);
+        document.getElementById('micResult').textContent='✅ '+final;
+      } else {
+        document.getElementById('micResult').textContent='❓ No entendí: "'+final+'"';
+      }
+    }
+  };
+  recognition.onerror=(e)=>{
+    document.getElementById('micResult').textContent=e.error==='not-allowed'?'🚫 Permiso denegado':'No escuché nada';
+    stopMic();
+  };
+  recognition.onend=stopMic;
+}
+function stopMic(){
+  listening=false;
+  document.getElementById('micBtn').classList.remove('listening');
+  document.getElementById('micBtn').textContent='🎤';
+  document.getElementById('micLabel').textContent='Tocá el micrófono y hablá';
+}
+function toggleMic(){
+  if(!recognition) return;
+  if(listening) recognition.stop(); else try{recognition.start();}catch(e){}
+}
+</script>
+</body>
+</html>
