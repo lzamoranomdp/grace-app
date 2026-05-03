@@ -7,7 +7,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Grace">
 <meta name="theme-color" id="themeColor" content="#f5f6fa">
-<link rel="manifest" href="manifest.json">
 <title>Grace</title>
 <style>
 :root {
@@ -146,7 +145,7 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); display:fl
     <div class="mic-result" id="micResult"></div>
   </div>
   <div class="grid">
-    <div class="btn whatsapp" id="btn-whatsapp" onclick="tap(this,'Abriendo WhatsApp...')">
+    <div class="btn whatsapp" id="btn-whatsapp" onclick="openApp('whatsapp')">
       <div class="icon">💬</div><div class="label">WhatsApp</div>
     </div>
     <div class="btn llamar" id="btn-llamar" onclick="openContacts()">
@@ -157,11 +156,11 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); display:fl
       <div class="label" id="banco-label">Mi Banco</div>
       <div class="edit-dot" onclick="openBankEdit(event)">✏️</div>
     </div>
-    <div class="btn camara" id="btn-camara" onclick="tap(this,'Abriendo cámara...')">
-      <div class="icon">📷</div><div class="label">Cámara</div>
+    <div class="btn camara" id="btn-camara" onclick="openApp('correo')">
+      <div class="icon">📧</div><div class="label">Correo</div>
     </div>
-    <div class="btn fotos" id="btn-fotos" onclick="tap(this,'Abriendo fotos...')">
-      <div class="icon">🖼️</div><div class="label">Mis Fotos</div>
+    <div class="btn fotos" id="btn-fotos" onclick="openApp('youtube')">
+      <div class="icon">▶️</div><div class="label">YouTube</div>
     </div>
     <div class="btn settings-btn" id="btn-ajustes" onclick="openSettings()">
       <div class="icon">⚙️</div><div class="label" style="color:var(--sub)">Ajustes</div>
@@ -296,8 +295,8 @@ const STORAGE_KEY = 'graceAppData';
 const EMOJIS = ['📱','👨‍⚕️','👩','👨','🏠','💊','❤️','⭐','🩺','👴','👵','🧒','🐾','🚗','📞'];
 
 const BANKS = [
-  { icon:'🟠', name:'Galicia',     deep:'galicia://',           fallback:'https://www.galicia.ar' },
-  { icon:'💙', name:'Cuenta DNI',  deep:'cuentadni://',         fallback:'https://cuentadni.com.ar' },
+  { icon:'🟠', name:'Galicia',    deep:'intent://home#Intent;scheme=com.bancogalicia.android;package=com.bancogalicia.android;end', fallback:'https://www.galicia.ar' },
+  { icon:'💙', name:'Cuenta DNI', deep:'intent://home#Intent;scheme=ar.com.bna.cuentadni;package=ar.com.bna.cuentadni;end',         fallback:'https://cuentadni.com.ar' },
 ];
 
 const defaultData = {
@@ -389,6 +388,20 @@ function toggleGlobalEdit(){
 }
 
 // --- Buttons ---
+function openApp(app) {
+  if(globalEdit) return;
+  const apps = {
+    whatsapp: { msg:'Abriendo WhatsApp...', deep:'whatsapp://', fallback:'https://wa.me' },
+    correo:   { msg:'Abriendo Correo...',   deep:'mailto:',     fallback:'https://mail.google.com' },
+    youtube:  { msg:'Abriendo YouTube...',  deep:'vnd.youtube://', fallback:'https://www.youtube.com' },
+  };
+  const a = apps[app];
+  if(!a) return;
+  showToast(a.msg); speak(a.msg);
+  window.location.href = a.deep;
+  setTimeout(() => { window.open(a.fallback, '_blank'); }, 1500);
+}
+
 function tap(el,msg){
   if(globalEdit) return;
   el.classList.add('pressed'); setTimeout(()=>el.classList.remove('pressed'),200);
@@ -529,11 +542,11 @@ function saveContact(){
 
 // --- Speech recognition ---
 const voiceCmds=[
-  {words:['whatsapp','watsap','mensaje','chat'],id:'btn-whatsapp',msg:'Abriendo WhatsApp...'},
+  {words:['whatsapp','watsap','mensaje','chat'],id:'btn-whatsapp',msg:''},
   {words:['llamar','teléfono','telefono','llamada'],id:'btn-llamar',msg:''},
   {words:['banco','galicia','cuenta','dni','plata'],id:'btn-banco',msg:''},
-  {words:['cámara','camara','sacar','foto'],id:'btn-camara',msg:'Abriendo cámara...'},
-  {words:['fotos','galería','galeria','imágenes'],id:'btn-fotos',msg:'Abriendo fotos...'},
+  {words:['correo','mail','email','gmail'],id:'btn-camara',msg:''},
+  {words:['youtube','video','videos','tube'],id:'btn-fotos',msg:''},
   {words:['ajustes','configuración','opciones','settings'],id:'btn-ajustes',msg:''},
   {words:['ayuda','socorro','emergencia','sos'],id:'btn-sos',msg:''},
 ];
@@ -567,10 +580,13 @@ if(!SR){
     if(final){
       const cmd=matchCmd(final);
       if(cmd){
-        if(cmd.id==='btn-llamar') openContacts();
-        else if(cmd.id==='btn-banco') openBank();
-        else if(cmd.id==='btn-sos') tapSOS();
+        if(cmd.id==='btn-whatsapp') openApp('whatsapp');
+        else if(cmd.id==='btn-llamar') openContacts();
+        else if(cmd.id==='btn-camara') openApp('correo');
+        else if(cmd.id==='btn-fotos') openApp('youtube');
         else if(cmd.id==='btn-ajustes') openSettings();
+
+        else if(cmd.id==='btn-banco') openBank();
         else activateBtn(cmd);
         document.getElementById('micResult').textContent='✅ '+final;
       } else {
